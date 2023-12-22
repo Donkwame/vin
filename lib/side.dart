@@ -1,11 +1,12 @@
 import 'dart:async';
-
-import 'dart:convert';
+import 'dart:convert' as convert;
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 
 // vin_decoder_page.dart
+
+
 
 class VinDecoderWidget extends StatefulWidget {
   const VinDecoderWidget({super.key});
@@ -17,10 +18,11 @@ class VinDecoderWidget extends StatefulWidget {
 class VinDecoderWidgetState extends State<VinDecoderWidget> {
   // ... (rest of your VinDecoderWidgetState code)
 
+
+
   String vin = '';
   String wmiCode = '';
   String decodingResult = '';
-  String decodeVehicleDetails = '';
 
   @override
   Widget build(BuildContext context) {
@@ -58,31 +60,21 @@ class VinDecoderWidgetState extends State<VinDecoderWidget> {
     );
   }
 
- void validateAndDecodeVin(BuildContext context) async {
-  if (vin.length != 17) {
-    showValidationMessage(context, 'The VIN number is not 17 characters.');
-    return;
+  void validateAndDecodeVin(BuildContext context) {
+    if (vin.length != 17) {
+      showValidationMessage(context, 'The VIN number is not 17 characters.');
+      return;
+    }
+
+    if (!RegExp(r'^[A-Z0-9]+$').hasMatch(vin)) {
+      showValidationMessage(context,
+          'Invalid VIN number. Must be a mixture of uppercase letters and numbers.');
+      return;
+    }
+
+    decodeVin();
+    decodeWmiCode(); // Call the WMI decoding method
   }
-
-  if (!RegExp(r'^[A-Z0-9]+$').hasMatch(vin)) {
-    showValidationMessage(context,
-        'Invalid VIN number. Must be a mixture of uppercase letters and numbers.');
-    return;
-  }
-
-  try {
-    final details =  decodeVehicleDetails;
-    // Handle the decoded details as needed
-    logger.d('Decoded VIN details: $details');
-  } catch (e) {
-    // Handle errors during decoding
-    logger.e('Error decoding VIN: $e');
-  }
-
-  decodeVin();
-  decodeWmiCode(); // Call the WMI decoding method
-}
-
 
   void showValidationMessage(BuildContext context, String message) {
     showDialog(
@@ -120,11 +112,6 @@ class VinDecoderWidgetState extends State<VinDecoderWidget> {
           Model: ${decoder.wmiDetails}
           Body Style: ${decoder.bodyStyle}
           Engine Type: ${decoder.engineType}
-
-          
-
-
-          
         ''';
       });
     } catch (e) {
@@ -1593,18 +1580,6 @@ class VinDecoder {
 
   String wmiDetails = '';
 
-  String name = '';
-  String manufacturername = '';
-  String enginenumberofcylinders = '';
-  String drivetype = '';
-  String transmissionstyle = '';
-  String numberofseatrows = '';
-  String modelyear = '';
-  String doors = '';
-  String plantcountry = '';
-  String vehicletype = '';
-  String bodyclass = '';
-
   Future<void> decodeVin(String vin) async {
     if (vin.length != 17) {
       throw ArgumentError("Invalid VIN code");
@@ -1786,120 +1761,62 @@ class VinDecoder {
 
   // ... (other fields and methods remain the same)
 
-  Future<String> decodeVehicleDetails(String vin) async {
-    var url = "https://vpic.nhtsa.dot.gov/api/vehicles/decodevin";
-    try {
-      var response = await http.get(Uri.parse('$url/$vin?format=json'));
+  Future<void> decodeVehicleDetails(String vin) async {
+    var url = Uri.https('vpic.nhtsa.dot.gov', '/api/vehicles/decodevin/$vin',
+        {'format': 'json'});
 
-      logger.d('API Response: ${response.body}');
+    var response = await http.get(url);
+    if (response.statusCode == 200) {
+      var jsonResponse =
+          convert.jsonDecode(response.body) as Map<String, dynamic>;
 
-      if (response.statusCode == 200) {
-        var json = jsonDecode(response.body) as Map<String, dynamic>;
+      var data = jsonResponse['Results'];
 
-        if (json.containsKey('Results')) {
-          var results = json['Results'];
+      String errorMessage =
+          data is Map ? data['Message'] ?? 'Unknown error' : 'Unknown error';
 
-          if (results is List && results.isNotEmpty) {
-            for (var result in results) {
-              var name = result['Variable'];
-              var value = result['Value'];
+      if (!errorMessage.contains("Results returned successfully")) {
+        logger.e("VIN decoder service error: $errorMessage");
 
-              logger.d('Name: $name, Value: $value');
+        // Log the entire response body for further investigation
+        logger.e("Response body: ${response.body}");
 
-              switch (name) {
-                case "Make":
-                  make = value ?? '';
-                  break;
-                case "Model":
-                  model = value ?? '';
-                  break;
-                case "Model Year":
-                  modelyear = value ?? '';
-                  break;
-                case "Engine Model":
-                  engineType = value ?? '';
-                  break;
-                case "Drive Type":
-                  drivetype = value ?? '';
-                  break;
-                case "Manufacturer Name":
-                  manufacturername = value ?? '';
-                  break;
-                case "Engine Number of Cylinders":
-                  enginenumberofcylinders = value ?? '';
-                  break;
-                case "Transmission Style":
-                  transmissionstyle = value ?? '';
-                  break;
-                case "Number of Seat Rows":
-                  numberofseatrows = value ?? '';
-                  break;
-                case "Doors":
-                  doors = value ?? '';
-                  break;
-                case "Plant Country":
-                  plantcountry = value ?? '';
-                  break;
-                case "Vehicle Type":
-                  vehicletype = value ?? '';
-                  break;
-                case "Body Class":
-                  bodyclass = value ?? '';
-                  break;
-                case "Error Code":
-                  if (value != "0") {
-                    return 'Error decoding VIN: Error Code $value';
-                  }
-                  break;
-
-                default:
-                  break;
-              }
-            }
-
-            return '''
-Make: $make
-Model: $model
-Doors: $doors
-Body Class: $bodyclass
-Vehicle Type: $vehicletype
-Model Year: $modelyear
-Engine Type: $engineType
-Drive Type: $drivetype
-Engine Number of Cylinders : $enginenumberofcylinders
-Plant Country: $plantcountry
-Manufacturer Name: $manufacturername
-Transmission Style: $transmissionstyle
-Number of Seat Rows: $numberofseatrows
-
-''';
-          } else {
-            logger.e(
-                "VIN decoder service error: No results or empty results list");
-            throw Exception(
-                "VIN decoder service error: No results or empty results list");
-          }
-        } else {
-          logger.e(
-              "VIN decoder service error: 'Results' key not found in response");
-          throw Exception(
-              "VIN decoder service error: 'Results' key not found in response");
-        }
-      } else {
-        logger.e(
-            "Failed to fetch data from VIN decoder API. Status code: ${response.statusCode}");
-        throw Exception(
-            "Failed to fetch data from VIN decoder API. Status code: ${response.statusCode}");
+        Exception("VIN decoder service error: $errorMessage");
       }
-    } on FormatException catch (e) {
-      logger.e("Error parsing data from VIN decoder API response: $e");
-      throw Exception("Error parsing data from VIN decoder API response: $e");
-    } on http.ClientException catch (e) {
-      logger.e("HTTP error: $e");
-      throw Exception("HTTP error: $e");
-    } on Exception catch (e) {
-      logger.e("Unknown error during VIN decoding: $e");
-      throw Exception("Unknown error during VIN decoding: $e");
+
+      for (var result in data) {
+        var name = result['Variable'];
+        var value = result['Value'];
+
+        switch (name) {
+          case "Make":
+            make = value;
+            break;
+          case "WMI Code":
+            wmiDetails = value;
+            break;
+          case "Body Class":
+            bodyStyle = value;
+            break;
+          case "Engine Model":
+            engineSize = value;
+            break;
+          case "Error Code":
+            if (value != "0") {
+              return;
+            }
+            break;
+          default:
+            break;
+        }
+      }
+    } else {
+      logger.e('Request failed with status: ${response.statusCode}.');
+
+      // Log the entire response body for further investigation
+      logger.e("Response body: ${response.body}");
+
+      throw Exception('Request failed with status: ${response.statusCode}.');
     }
   }
 }

@@ -58,31 +58,30 @@ class VinDecoderWidgetState extends State<VinDecoderWidget> {
     );
   }
 
- void validateAndDecodeVin(BuildContext context) async {
-  if (vin.length != 17) {
-    showValidationMessage(context, 'The VIN number is not 17 characters.');
-    return;
+  void validateAndDecodeVin(BuildContext context) async {
+    if (vin.length != 17) {
+      showValidationMessage(context, 'The VIN number is not 17 characters.');
+      return;
+    }
+
+    if (!RegExp(r'^[A-Z0-9]+$').hasMatch(vin)) {
+      showValidationMessage(context,
+          'Invalid VIN number. Must be a mixture of uppercase letters and numbers.');
+      return;
+    }
+
+    try {
+      final details = decodeVehicleDetails;
+      // Handle the decoded details as needed
+      logger.d('Decoded VIN details: $details');
+    } catch (e) {
+      // Handle errors during decoding
+      logger.e('Error decoding VIN: $e');
+    }
+    
+    decodeVin();
+    decodeWmiCode(); // Call the WMI decoding method
   }
-
-  if (!RegExp(r'^[A-Z0-9]+$').hasMatch(vin)) {
-    showValidationMessage(context,
-        'Invalid VIN number. Must be a mixture of uppercase letters and numbers.');
-    return;
-  }
-
-  try {
-    final details =  decodeVehicleDetails;
-    // Handle the decoded details as needed
-    logger.d('Decoded VIN details: $details');
-  } catch (e) {
-    // Handle errors during decoding
-    logger.e('Error decoding VIN: $e');
-  }
-
-  decodeVin();
-  decodeWmiCode(); // Call the WMI decoding method
-}
-
 
   void showValidationMessage(BuildContext context, String message) {
     showDialog(
@@ -121,10 +120,7 @@ class VinDecoderWidgetState extends State<VinDecoderWidget> {
           Body Style: ${decoder.bodyStyle}
           Engine Type: ${decoder.engineType}
 
-          
 
-
-          
         ''';
       });
     } catch (e) {
