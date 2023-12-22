@@ -1,5 +1,3 @@
-// main.dart
-
 import 'package:flutter/material.dart';
 import 'vin_decoder_widget.dart'; // Replace with the correct import path
 

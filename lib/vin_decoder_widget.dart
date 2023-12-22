@@ -121,10 +121,6 @@ class VinDecoderWidgetState extends State<VinDecoderWidget> {
           Body Style: ${decoder.bodyStyle}
           Engine Type: ${decoder.engineType}
 
-          
-
-
-          
         ''';
       });
     } catch (e) {
