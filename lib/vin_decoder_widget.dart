@@ -23,8 +23,10 @@ class VinDecoderWidgetState extends State<VinDecoderWidget> {
   String decodeVehicleDetails = '';
 
   @override
-  Widget build(BuildContext context) {
-    return Padding(
+ Widget build(BuildContext context) {
+  return SingleChildScrollView(
+    
+    child: Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -55,10 +57,10 @@ class VinDecoderWidgetState extends State<VinDecoderWidget> {
           Text(decodingResult),
         ],
       ),
-    );
+  ));
   }
 
- void validateAndDecodeVin(BuildContext context) async {
+void validateAndDecodeVin(BuildContext context) async {
   if (vin.length != 17) {
     showValidationMessage(context, 'The VIN number is not 17 characters.');
     return;
@@ -71,17 +73,15 @@ class VinDecoderWidgetState extends State<VinDecoderWidget> {
   }
 
   try {
-    final details =  decodeVehicleDetails;
-    // Handle the decoded details as needed
-    logger.d('Decoded VIN details: $details');
+    await decodeVin(); // Wait for decoding the VIN details
+    decodeWmiCode();   // Call the WMI decoding method
   } catch (e) {
     // Handle errors during decoding
     logger.e('Error decoding VIN: $e');
   }
-
-  decodeVin();
-  decodeWmiCode(); // Call the WMI decoding method
 }
+
+
 
 
   void showValidationMessage(BuildContext context, String message) {
@@ -104,31 +104,33 @@ class VinDecoderWidgetState extends State<VinDecoderWidget> {
     );
   }
 
-  void decodeVin() async {
-    try {
-      final decoder = VinDecoder();
-      decoder.decodeVin(vin);
+  Future<void> decodeVin() async {
+  try {
+    final decoder = VinDecoder();
+    await decoder.decodeVin(vin); // Wait for decoding VIN
 
-      setState(() {
-        decodingResult = '''
-          VIN Decoding Result:
-          Country: ${decoder.country}
-          Make: ${decoder.make}
-          Continent: ${decoder.continent}
-          Model Year: ${decoder.modelYear}
-          Engine Size: ${decoder.engineSize}
-          Model: ${decoder.wmiDetails}
-          Body Style: ${decoder.bodyStyle}
-          Engine Type: ${decoder.engineType}
-
-        ''';
-      });
-    } catch (e) {
-      setState(() {
-        decodingResult = 'Error decoding VIN: $e';
-      });
-    }
+    setState(() {
+      decodingResult = '''
+        VIN Decoding Result:
+        Country: ${decoder.plantcountry}
+        Make: ${decoder.make}
+        Manufacturer Name:${decoder.manufacturername}
+        Continent: ${decoder.continent}
+        Model Year: ${decoder.modelYear}
+        Engine Size: ${decoder.engineSize}
+        Model: ${decoder.model}
+        Body Style: ${decoder.bodyclass}
+        Engine Type: ${decoder.engineType}
+        Vehicle Type:${decoder.vehicletype}
+      ''';
+    });
+  } catch (e) {
+    setState(() {
+      decodingResult = 'Error decoding VIN: $e';
+    });
   }
+}
+
 
   void decodeWmiCode() {
     Map<String, dynamic> wmiDetails = {
@@ -1602,16 +1604,17 @@ class VinDecoder {
   String bodyclass = '';
 
   Future<void> decodeVin(String vin) async {
-    if (vin.length != 17) {
-      throw ArgumentError("Invalid VIN code");
-    }
-
-    decodeVehicleDetails(vin);
-    decodeCountry(vin[0]);
-    decodeContinent(vin[3]);
-    decodeEngineSize(vin[4]);
-    decodeModelYear(vin[9]);
+  if (vin.length != 17) {
+    throw ArgumentError("Invalid VIN code");
   }
+
+  await decodeVehicleDetails(vin);
+  await decodeCountry(vin[0]);
+  await decodeContinent(vin[3]);
+  await decodeEngineSize(vin[4]);
+  await decodeModelYear(vin[9]);
+}
+
 
   Future<void> decodeCountry(String v) async {
     var vmiDetails = {
@@ -1646,54 +1649,54 @@ class VinDecoder {
     }
   }
 
-  void decodeContinent(String c) {
-    switch (c) {
-      case '1':
-      case '4':
-      case '5':
-        country = 'North America';
-        break;
-      case '2':
-      case 'TR':
-        country = 'South America';
-        break;
-      case 'TJ':
-      case 'TP':
-        country = 'Czech';
-        break;
-      case 'TA':
-      case 'TH':
-        continent = 'Switzerland';
-        break;
-      case 'S1':
-      case 's4':
-        country = 'Latvia';
-        break;
-      case 'SU':
-      case 'SZ':
-        country = 'Poland';
-        break;
-      case 'SA':
-      case 'SM':
-        country = 'Great Britain';
-        break;
-      case 'SN':
-      case 'ST':
-        country = 'Germany';
-      case 'U':
-      case 'V':
-      case 'W':
-      case 'X':
-      case 'Y':
-      case 'Z':
-        continent = 'Europe';
-        break;
-      default:
-        ArgumentError("Invalid continent code");
-    }
-  }
 
-  void decodeModelYear(String c) {
+  Future<void> decodeContinent(String c) async {
+
+  switch (c) {
+    case '1':
+    case '4':
+    case '5':
+      continent = 'North America';
+      break;
+    case '2':
+    case 'T':
+      continent = 'South America';
+      break;
+    case 'J':
+    case 'K':
+    case 'L':
+    case 'M':
+    case 'N':
+    case 'P':
+    case 'R':
+      continent = 'Asia';
+      break;
+    case 'S':
+    case 'U':
+    case 'V':
+    case 'W':
+    case 'X':
+    case 'Y':
+    case 'Z':
+      continent = 'Europe';
+      break;
+    case '3':
+      continent = 'Asia';
+      break;
+    case '6':
+      continent = 'Oceania';
+      break;
+    case '9':
+      continent = 'Africa';
+      break;
+    default:
+       ArgumentError("Invalid continent code: $c");
+  }
+}
+
+
+
+  Future<void> decodeModelYear(String c) async {
     var modelYearMap = {
       '0': "2000",
       '1': "2001",
@@ -1735,7 +1738,8 @@ class VinDecoder {
     }
   }
 
-  void decodeEngineSize(String c) {
+  Future<void> decodeEngineSize(String c) async {
+
     var engineSizeMap = {
       'A': "Gasoline, 3 or 4 cylinders",
       'B': "Gasoline, 3 or 4 cylinders",
@@ -1781,6 +1785,7 @@ class VinDecoder {
   final Logger logger = Logger();
 
   // ... (other fields and methods remain the same)
+
 
   Future<String> decodeVehicleDetails(String vin) async {
     var url = "https://vpic.nhtsa.dot.gov/api/vehicles/decodevin";
