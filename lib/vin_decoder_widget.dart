@@ -5,8 +5,6 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 
-// vin_decoder_page.dart
-
 class VinDecoderWidget extends StatefulWidget {
   const VinDecoderWidget({super.key});
 
@@ -15,18 +13,15 @@ class VinDecoderWidget extends StatefulWidget {
 }
 
 class VinDecoderWidgetState extends State<VinDecoderWidget> {
-  // ... (rest of your VinDecoderWidgetState code)
-
   String vin = '';
   String wmiCode = '';
   String decodingResult = '';
   String decodeVehicleDetails = '';
 
   @override
- Widget build(BuildContext context) {
-  return SingleChildScrollView(
-    
-    child: Padding(
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+        child: Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -57,32 +52,29 @@ class VinDecoderWidgetState extends State<VinDecoderWidget> {
           Text(decodingResult),
         ],
       ),
-  ));
+    ));
   }
 
-void validateAndDecodeVin(BuildContext context) async {
-  if (vin.length != 17) {
-    showValidationMessage(context, 'The VIN number is not 17 characters.');
-    return;
+  void validateAndDecodeVin(BuildContext context) async {
+    if (vin.length != 17) {
+      showValidationMessage(context, 'The VIN number is not 17 characters.');
+      return;
+    }
+
+    if (!RegExp(r'^[A-Z0-9]+$').hasMatch(vin)) {
+      showValidationMessage(context,
+          'Invalid VIN number. Must be a mixture of uppercase letters and numbers.');
+      return;
+    }
+
+    try {
+      await decodeVin(); // Wait for decoding the VIN details
+      decodeWmiCode(); // Call the WMI decoding method
+    } catch (e) {
+      // Handle errors during decoding
+      logger.e('Error decoding VIN: $e');
+    }
   }
-
-  if (!RegExp(r'^[A-Z0-9]+$').hasMatch(vin)) {
-    showValidationMessage(context,
-        'Invalid VIN number. Must be a mixture of uppercase letters and numbers.');
-    return;
-  }
-
-  try {
-    await decodeVin(); // Wait for decoding the VIN details
-    decodeWmiCode();   // Call the WMI decoding method
-  } catch (e) {
-    // Handle errors during decoding
-    logger.e('Error decoding VIN: $e');
-  }
-}
-
-
-
 
   void showValidationMessage(BuildContext context, String message) {
     showDialog(
@@ -105,12 +97,12 @@ void validateAndDecodeVin(BuildContext context) async {
   }
 
   Future<void> decodeVin() async {
-  try {
-    final decoder = VinDecoder();
-    await decoder.decodeVin(vin); // Wait for decoding VIN
+    try {
+      final decoder = VinDecoder();
+      await decoder.decodeVin(vin); // Wait for decoding VIN
 
-    setState(() {
-      decodingResult = '''
+      setState(() {
+        decodingResult = '''
         VIN Decoding Result:
         Country: ${decoder.plantcountry}
         Make: ${decoder.make}
@@ -123,14 +115,13 @@ void validateAndDecodeVin(BuildContext context) async {
         Engine Type: ${decoder.engineType}
         Vehicle Type:${decoder.vehicletype}
       ''';
-    });
-  } catch (e) {
-    setState(() {
-      decodingResult = 'Error decoding VIN: $e';
-    });
+      });
+    } catch (e) {
+      setState(() {
+        decodingResult = 'Error decoding VIN: $e';
+      });
+    }
   }
-}
-
 
   void decodeWmiCode() {
     Map<String, dynamic> wmiDetails = {
@@ -1604,17 +1595,16 @@ class VinDecoder {
   String bodyclass = '';
 
   Future<void> decodeVin(String vin) async {
-  if (vin.length != 17) {
-    throw ArgumentError("Invalid VIN code");
+    if (vin.length != 17) {
+      throw ArgumentError("Invalid VIN code");
+    }
+
+    await decodeVehicleDetails(vin);
+    await decodeCountry(vin[0]);
+    await decodeContinent(vin[0]);
+    await decodeEngineSize(vin[4]);
+    await decodeModelYear(vin[9]);
   }
-
-  await decodeVehicleDetails(vin);
-  await decodeCountry(vin[0]);
-  await decodeContinent(vin[3]);
-  await decodeEngineSize(vin[4]);
-  await decodeModelYear(vin[9]);
-}
-
 
   Future<void> decodeCountry(String v) async {
     var vmiDetails = {
@@ -1649,52 +1639,56 @@ class VinDecoder {
     }
   }
 
-
   Future<void> decodeContinent(String c) async {
+    switch (c) {
+      case '1':
+      case '2':
+      case '3':
+      case '4':
+      case '5':
+        continent = 'North America';
+        break;
+      case '8':
+      case '9':
+        continent = 'South America';
+        break;
+      case 'J':
+      case 'K':
+      case 'L':
+      case 'M':
+      case 'N':
+      case 'P':
+      case 'R':
+        continent = 'Asia';
+        break;
+      case 'S':
+      case 'T':
+      case 'U':
+      case 'V':
+      case 'W':
+      case 'X':
+      case 'Y':
+      case 'Z':
+        continent = 'Europe';
 
-  switch (c) {
-    case '1':
-    case '4':
-    case '5':
-      continent = 'North America';
-      break;
-    case '2':
-    case 'T':
-      continent = 'South America';
-      break;
-    case 'J':
-    case 'K':
-    case 'L':
-    case 'M':
-    case 'N':
-    case 'P':
-    case 'R':
-      continent = 'Asia';
-      break;
-    case 'S':
-    case 'U':
-    case 'V':
-    case 'W':
-    case 'X':
-    case 'Y':
-    case 'Z':
-      continent = 'Europe';
-      break;
-    case '3':
-      continent = 'Asia';
-      break;
-    case '6':
-      continent = 'Oceania';
-      break;
-    case '9':
-      continent = 'Africa';
-      break;
-    default:
-       ArgumentError("Invalid continent code: $c");
+      case '6':
+      case '7':
+        continent = 'Oceania';
+        break;
+      case 'A':
+      case 'B':
+      case 'C':
+      case 'D':
+      case 'E':
+      case 'F':
+      case 'G':
+      case 'H':
+        continent = 'Africa';
+        break;
+      default:
+        ArgumentError("Invalid continent code: $c");
+    }
   }
-}
-
-
 
   Future<void> decodeModelYear(String c) async {
     var modelYearMap = {
@@ -1739,7 +1733,6 @@ class VinDecoder {
   }
 
   Future<void> decodeEngineSize(String c) async {
-
     var engineSizeMap = {
       'A': "Gasoline, 3 or 4 cylinders",
       'B': "Gasoline, 3 or 4 cylinders",
@@ -1785,7 +1778,6 @@ class VinDecoder {
   final Logger logger = Logger();
 
   // ... (other fields and methods remain the same)
-
 
   Future<String> decodeVehicleDetails(String vin) async {
     var url = "https://vpic.nhtsa.dot.gov/api/vehicles/decodevin";
