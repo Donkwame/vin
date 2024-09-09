@@ -1,7 +1,22 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'vin_decoder_widget.dart'; // Replace with the correct import path
+import 'package:flutter/services.dart';
+import 'package:vin/auth/welcome.dart';
 
-void main() {
+import 'firebase_options.dart';
+
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  
+
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    systemNavigationBarColor: Colors.transparent,
+  ));
+
   runApp(const MyApp());
 }
 
@@ -10,14 +25,9 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Vin Decoder'),
-        ),
-        body: const VinDecoderWidget(),
-      ),
+    return const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Welcome(),
     );
   }
 }
-

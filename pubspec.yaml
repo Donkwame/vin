@@ -41,6 +41,18 @@ dependencies:
   open_file: ^3.3.2
   path_provider: ^2.1.1
   logger: ^2.0.2+1
+  google_fonts: ^6.2.1
+  firebase_core: ^3.2.0
+  firebase_auth: ^5.1.2
+  firebase_storage: ^12.1.1
+  shared_preferences: ^2.2.3
+  lottie: ^3.1.2
+  cloud_firestore: ^5.1.0
+  icon: ^2.2.1
+  google_nav_bar: ^5.0.6
+  flutter_image_slideshow: ^0.1.6
+  water_drop_nav_bar: ^2.2.2
+  image_picker: ^1.1.2
 
 dev_dependencies:
   flutter_test:
@@ -51,7 +63,7 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^3.0.1
+  flutter_lints: ^4.0.0
   json_serializable: ^6.7.1
 
 # For information on the generic Dart part of this file, see the
@@ -66,12 +78,9 @@ flutter:
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
-assets:
-    - lib/car.jpg
-    - lib/image.jpg
-    - lib/image(1).jpeg
-    - lib/imgae(2).jpeg
-
+  assets:
+    - assets/image/
+    - assets/image/icons/
     - lib/decoder.json
 
   # An image asset can refer to one or more resolution-specific "variants", see
