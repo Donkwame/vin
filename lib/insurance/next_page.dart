@@ -72,7 +72,7 @@ class NextPage extends StatelessWidget {
                 try {
                   // Assuming you have a way to get the registration number
                   String registrationNumber = ''; // Retrieve this as needed
-                  await _firebaseService.updateVehicleInsurance(registrationNumber);
+                 // await _firebaseService.updateVehicleInsurance(registrationNumber);
 
                   // Show a pop-up message
                   showDialog(

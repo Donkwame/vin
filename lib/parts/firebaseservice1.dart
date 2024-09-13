@@ -1,13 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class FirebaseService {
+class FirebaseService1 {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  Future<Map<String, dynamic>> fetchVehicleData(String registrationnumber) async {
+  Future<Map<String, dynamic>> fetchVehicleData(String vin) async {
     try {
       final querySnapshot = await _firestore
-          .collection('vehicles')
-          .where('registrationnumber', isEqualTo: registrationnumber)
+          .collection('GRA')
+          .where('vin', isEqualTo: vin)
           .get();
 
       if (querySnapshot.docs.isNotEmpty) {
